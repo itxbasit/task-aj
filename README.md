@@ -568,7 +568,7 @@ ON CONFLICT (id) DO NOTHING;</code></pre>
 
             <h3>Development</h3>
             <pre><code>npm run dev</code></pre>
-            <p>Open <a href="http://localhost:3000">http://localhost:3000</a></p>
+            <p>Open <a href="https://task-aj-eight.vercel.app/login">https://task-aj-eight.vercel.app/login</a></p>
 
             <h3>Production Build</h3>
             <pre><code>npm run build
