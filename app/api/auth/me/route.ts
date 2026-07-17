@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const { data: user, error } = await supabase.auth.getSession();
-    console.log(user);
-    if (error || !user) {
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const user = data.session.user;
 
     // Get user profile from users table
     const { data: profile } = await supabase

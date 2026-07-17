@@ -81,7 +81,7 @@ export function DocumentCard({ document, isShared }: DocumentCardProps) {
               </div>
               {!isShared && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  <DropdownMenuTrigger>
                     <Button 
                       variant="ghost" 
                       size="sm" 

@@ -3,15 +3,16 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createServerSupabaseClient()
 
     const { data: document, error } = await supabase
       .from('documents')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -30,9 +31,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createServerSupabaseClient()
 
     const {
@@ -48,7 +50,7 @@ export async function PATCH(
     const { data: doc } = await supabase
       .from('documents')
       .select('owner_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!doc || doc.owner_id !== user.session?.user.id) {
@@ -64,7 +66,7 @@ export async function PATCH(
         ...(content !== undefined && { content }),
         updated_at: new Date()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 
@@ -82,9 +84,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createServerSupabaseClient()
 
     const {
@@ -100,7 +103,7 @@ export async function DELETE(
     const { data: doc } = await supabase
       .from('documents')
       .select('owner_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!doc || doc.owner_id !== user.session?.user.id) {
@@ -110,7 +113,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('documents')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) throw error
 

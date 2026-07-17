@@ -3,15 +3,16 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createServerSupabaseClient()
 
     const { data, error } = await supabase
       .from('document_shares')
       .select('id, permission, users:shared_with_user_id(id, email, name)')
-      .eq('document_id', params.id)
+      .eq('document_id', id)
 
     if (error) throw error
 
@@ -27,25 +28,25 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createServerSupabaseClient()
 
-    const {
-      data:  user ,
-      error: authError
-    } = await supabase.auth.getSession()
+    const { data, error: authError } = await supabase.auth.getSession()
 
-    if (authError || !user) {
+    if (authError || !data.session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    const user = data.session.user
 
     // Verify ownership
     const { data: doc } = await supabase
       .from('documents')
       .select('owner_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!doc || doc.owner_id !== user.id) {
@@ -54,11 +55,11 @@ export async function POST(
 
     const { userId, permission } = await request.json()
 
-    const { data, error } = await supabase
+    const { data: shareData, error } = await supabase
       .from('document_shares')
       .insert([
         {
-          document_id: params.id,
+          document_id: id,
           shared_with_user_id: userId,
           permission: permission || 'view'
         }
@@ -68,7 +69,7 @@ export async function POST(
 
     if (error) throw error
 
-    return NextResponse.json(data)
+    return NextResponse.json(shareData)
   } catch (error: any) {
     console.error('Error sharing document:', error)
     return NextResponse.json(
@@ -80,9 +81,10 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createServerSupabaseClient()
 
     const {
@@ -98,7 +100,7 @@ export async function DELETE(
     const { data: doc } = await supabase
       .from('documents')
       .select('owner_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!doc || doc.owner_id !== user.session?.user.id) {

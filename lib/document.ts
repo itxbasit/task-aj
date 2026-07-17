@@ -42,7 +42,7 @@ export async function getSharedDocuments(userId: string) {
     .order('created_at', { ascending: false })
 
   if (error) throw error
-  return data?.map((share) => (share.documents as Document)) || []
+  return (data?.map((share) => (share.documents as unknown as Document)) || []) as Document[]
 }
 
 export async function updateDocument(documentId: string, title?: string, content?: string) {

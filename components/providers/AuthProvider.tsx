@@ -1,14 +1,32 @@
 // components/AuthProvider.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+
+interface AuthContextValue {
+  user: any
+  signOut: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null)
+
+export function useAuth() {
+  const context = useContext(AuthContext)
+
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+
+  return context
+}
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
 
   // Sync auth status from localStorage to cookie for middleware
   const syncAuthToCookie = async () => {
@@ -35,6 +53,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       await syncAuthToCookie();
 
       const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null)
       const isAuthenticated = !!session;
 
       // If on login/register and authenticated, redirect to home
@@ -74,6 +93,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       await syncAuthToCookie();
 
       if (event === 'SIGNED_OUT' || !session) {
+        setUser(null)
         // Clear cookies on sign out
         document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         document.cookie = 'auth-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -85,6 +105,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
           router.push('/login');
         }
       } else if (session?.access_token) {
+        setUser(session.user)
         // Update cookies on sign in
         document.cookie = `auth-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax`;
         document.cookie = `auth-user=${JSON.stringify(session.user)}; path=/; max-age=3600; SameSite=Lax`;
@@ -112,5 +133,14 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     );
   }
 
-  return <>{children}</>;
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
